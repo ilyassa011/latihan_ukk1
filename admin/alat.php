@@ -2,22 +2,50 @@
 session_start();
 require_once '../koneksi.php';
 
+// Cek hak akses admin
 if (!isset($_SESSION['user']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../login.php");
     exit;
 }
 
-// Proses Hapus Alat
-if (isset($_GET['hapus'])) {
-    $id_alat = $_GET['hapus'];
-    mysqli_query($koneksi, "DELETE FROM alat WHERE id_alat = '$id_alat'");
-    header("Location: alat.php");
-    exit;
+$id_user = $_SESSION['user']['id_user'] ?? $_SESSION['user']['id'] ?? null;
+$error = '';
+
+// PROSES TAMBAH ALAT
+if (isset($_POST['simpan'])) {
+    $nama_alat = mysqli_real_escape_string($koneksi, $_POST['nama_alat']);
+    $id_kategori = mysqli_real_escape_string($koneksi, $_POST['id_kategori']);
+    $stok = mysqli_real_escape_string($koneksi, $_POST['stok']);
+    $kondisi = mysqli_real_escape_string($koneksi, $_POST['kondisi']);
+
+    if (!empty($nama_alat) && $stok !== '' && !empty($kondisi)) {
+        mysqli_begin_transaction($koneksi);
+
+        try {
+            // Query insert data alat baru
+            $query = "INSERT INTO alat (nama_alat, id_kategori, stok, kondisi) 
+                      VALUES ('$nama_alat', '$id_kategori', '$stok', '$kondisi')";
+            mysqli_query($koneksi, $query);
+
+            // Catat log aktivitas
+            if (function_exists('catat_log')) {
+                catat_log($koneksi, $id_user, "Menambahkan alat baru: " . $nama_alat . " (Stok: $stok)");
+            }
+
+            mysqli_commit($koneksi);
+            $_SESSION['flash_success'] = "Data alat berhasil ditambahkan!";
+            header("Location: alat.php");
+            exit;
+        } catch (Exception $e) {
+            mysqli_rollback($koneksi);
+            $error = "Gagal menyimpan data alat: " . $e->getMessage();
+        }
+    } else {
+        $error = "Semua field wajib diisi!";
+    }
 }
 
-// Ambil data alat & kategori
-$query = "SELECT alat.*, kategori.nama_kategori FROM alat LEFT JOIN kategori ON alat.id_kategori = kategori.id_kategori";
-$result = mysqli_query($koneksi, $query);
+// Ambil daftar kategori untuk dropdown
 $kategori_result = mysqli_query($koneksi, "SELECT * FROM kategori");
 ?>
 
@@ -25,10 +53,12 @@ $kategori_result = mysqli_query($koneksi, "SELECT * FROM kategori");
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Kelola Alat - Admin</title>
+    <title>Tambah Alat - Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
+
+    <!-- Navbar Admin -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand fw-bold" href="dashboard.php">AdminPanel</a>
@@ -45,45 +75,62 @@ $kategori_result = mysqli_query($koneksi, "SELECT * FROM kategori");
         </div>
     </nav>
 
+    <!-- Konten Utama -->
     <div class="container my-4">
-        <h3>Kelola Data Alat</h3>
-        <a href="tambah_alat.php" class="btn btn-primary btn-sm mb-3">+ Tambah Alat</a>
-
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <table class="table table-bordered table-striped align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>No</th>
-                            <th>Nama Alat</th>
-                            <th>Kategori</th>
-                            <th>Stok</th>
-                            <th>Kondisi</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if ($result && mysqli_num_rows($result) > 0): ?>
-                            <?php $no = 1; while ($row = mysqli_fetch_assoc($result)): ?>
-                                <tr>
-                                    <td><?= $no++; ?></td>
-                                    <td><?= htmlspecialchars($row['nama_alat']); ?></td>
-                                    <td><?= htmlspecialchars($row['nama_kategori'] ?? 'Umum'); ?></td>
-                                    <td><?= $row['stok']; ?></td>
-                                    <td><?= htmlspecialchars($row['kondisi']); ?></td>
-                                    <td>
-                                        <a href="edit_alat.php?id=<?= $row['id_alat']; ?>" class="btn btn-warning btn-sm">Edit</a>
-                                        <a href="alat.php?hapus=<?= $row['id_alat']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus alat ini?')">Hapus</a>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr><td colspan="6" class="text-center text-muted">Belum ada data alat.</td></tr>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3">
+                        <h4 class="mb-0 fw-bold">Tambah Data Alat</h4>
+                    </div>
+                    <div class="card-body">
+                        <?php if ($error): ?>
+                            <div class="alert alert-danger py-2" role="alert">
+                                <?= $error; ?>
+                            </div>
                         <?php endif; ?>
-                    </tbody>
-                </table>
+
+                        <form action="" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Nama Alat</label>
+                                <input type="text" name="nama_alat" class="form-control" placeholder="Contoh: Proyektor Epson" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Kategori</label>
+                                <select name="id_kategori" class="form-select" required>
+                                    <option value="" disabled selected>Pilih Kategori</option>
+                                    <?php while ($kat = mysqli_fetch_assoc($kategori_result)): ?>
+                                        <option value="<?= $kat['id_kategori']; ?>"><?= htmlspecialchars($kat['nama_kategori']); ?></option>
+                                    <?php endwhile; ?>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Stok Awal</label>
+                                <input type="number" name="stok" class="form-control" placeholder="Contoh: 10" min="0" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Kondisi Alat</label>
+                                <select name="kondisi" class="form-select" required>
+                                    <option value="Baik" selected>Baik</option>
+                                    <option value="Rusak Ringan">Rusak Ringan</option>
+                                    <option value="Rusak Berat">Rusak Berat</option>
+                                </select>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a href="alat.php" class="btn btn-secondary btn-sm">Kembali</a>
+                                <button type="submit" name="simpan" class="btn btn-primary btn-sm">Simpan Alat</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
