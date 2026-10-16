@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once '../koneksi.php';
 
 // Cek hak akses peminjam
@@ -33,7 +34,7 @@ if (isset($_POST['pinjam'])) {
 
             mysqli_commit($koneksi);
 
-            // --- SISIPKAN CATAT LOG DI SINI ---
+            // --- CATAT LOG AKTIVITAS PEMINJAMAN ---
             catat_log($koneksi, $id_user, "Mengajukan peminjaman alat: " . $data_alat['nama_alat']);
 
             $_SESSION['flash_success'] = "Pengajuan peminjaman untuk " . htmlspecialchars($data_alat['nama_alat']) . " berhasil dikirim!";
@@ -67,22 +68,43 @@ $alat_result = mysqli_query($koneksi, "SELECT alat.*, kategori.nama_kategori FRO
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
-   <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+
+    <!-- Navbar Peminjam (Lengkap dengan Navigasi Pengembalian Alat) -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="peminjam.php">Dashboard Peminjam</a>
+            <a class="navbar-brand fw-bold" href="dashboard.php">Dashboard Peminjam</a>
+            
+            <div class="navbar-nav me-auto ms-3">
+                <a class="nav-link active" href="dashboard.php">Daftar Alat</a>
+                <a class="nav-link" href="pengembalian.php">Pengembalian Alat</a>
+                <a class="nav-link" href="riwayat.php">Riwayat Peminjaman</a>
+            </div>
+            </div>
+
             <div class="d-flex align-items-center">
-                <a href="dashboard.php" class="btn btn-light btn-sm me-2">Daftar Alat</a>
-                <a href="riwayat.php" class="btn btn-light btn-sm text-primary me-3 fw-semibold">Riwayat Peminjaman</a>
                 <span class="text-white me-3 small">Halo, <?= htmlspecialchars($_SESSION['user']['nama_lengkap']); ?></span>
                 <a href="../logout.php" class="btn btn-danger btn-sm">Logout</a>
             </div>
         </div>
     </nav>
 
+    <!-- Konten Utama -->
     <div class="container my-5">
         <h3 class="mb-4">Daftar Alat Tersedia</h3>
-        <?php if ($success): ?><div class="alert alert-success py-2"><?= $success; ?></div><?php endif; ?>
-        <?php if ($error): ?><div class="alert alert-danger py-2"><?= $error; ?></div><?php endif; ?>
+        
+        <?php if ($success): ?>
+            <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+                <?= $success; ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($error): ?>
+            <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+                <?= $error; ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
 
         <div class="row">
             <?php while ($alat = mysqli_fetch_assoc($alat_result)): ?>
@@ -111,5 +133,7 @@ $alat_result = mysqli_query($koneksi, "SELECT alat.*, kategori.nama_kategori FRO
             <?php endwhile; ?>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
