@@ -82,7 +82,9 @@ if (isset($_POST['login'])) {
                 <button type="submit" name="login" class="btn btn-primary w-100 fw-bold">Login</button>
             </form>
 
+            <!-- Tautan Navigasi Tambahan -->
             <div class="text-center mt-3">
+                <p class="small text-muted mb-1">Belum punya akun? <a href="registrasi.php" class="text-decoration-none fw-bold">Daftar di sini</a></p>
                 <a href="index.php" class="text-decoration-none small text-secondary">&larr; Kembali ke Beranda</a>
             </div>
         </div>
