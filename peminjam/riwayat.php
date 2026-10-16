@@ -30,17 +30,24 @@ $riwayat_result = mysqli_query($koneksi, "SELECT peminjaman.*, alat.nama_alat
 <body class="bg-light">
 
     <!-- Navbar Peminjam -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="peminjam.php">Dashboard Peminjam</a>
+            <a class="navbar-brand fw-bold" href="dashboard.php">Dashboard Peminjam</a>
+            
+            <div class="navbar-nav me-auto ms-3">
+                <a class="nav-link" href="dashboard.php">Daftar Alat</a>
+                <a class="nav-link" href="pengembalian.php">Pengembalian Alat</a>
+                <a class="nav-link active" href="riwayat.php">Riwayat Peminjaman</a>
+            </div>
+            </div>
+
             <div class="d-flex align-items-center">
-                <a href="dashboard.php" class="btn btn-outline-light btn-sm me-2">Daftar Alat</a>
-                <a href="riwayat.php" class="btn btn-light btn-sm text-primary me-3 fw-semibold">Riwayat Peminjaman</a>
                 <span class="text-white me-3 small">Halo, <?= htmlspecialchars($_SESSION['user']['nama_lengkap']); ?></span>
                 <a href="../logout.php" class="btn btn-danger btn-sm">Logout</a>
             </div>
         </div>
     </nav>
+
 
     <!-- Konten Utama: Riwayat -->
     <div class="container my-5">
